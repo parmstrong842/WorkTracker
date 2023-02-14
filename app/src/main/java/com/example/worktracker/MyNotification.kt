@@ -25,7 +25,7 @@ class MyNotification {
         val notification: Notification = Notification.Builder(context, Constants.CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(msg)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_stat_name)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
             .setOnlyAlertOnce(true)
