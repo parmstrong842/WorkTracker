@@ -9,8 +9,8 @@ android {
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.example.worktracker"
-        minSdk 26
+        applicationId "onedroid.worktracker"
+        minSdk 29
         targetSdk 33
         versionCode 1
         versionName "1.0"
