@@ -4,5 +4,10 @@ Worktracker is a comprehensive and user-friendly app designed to help you keep a
 
 The app accurately tracks the time you spend working and generates detailed reports on your work hours, so you can keep a record of your daily, weekly, and monthly hours worked. With WorkTracker, you'll never have to worry about losing track of your hours or misplacing manual time sheets.
 
-<img src="media/light-clock.png"/> <img src="media/light-shifts.png"/> <img src="media/light-new-shift.png"/> <img src="media/dark-clock.png"/> <img src="media/dark-shifts.png"/> <img src="media/dark-new-shift.png"/>
+<img src="media/light-clock.png" style="height: 100px; width:100px;"/> 
+<img src="media/dark-clock.png" style="height: 100px; width:100px;"/>
+<img src="media/light-shifts.png" style="height: 100px; width:100px;"/>
+<img src="media/dark-shifts.png" style="height: 100px; width:100px;"/>
+<img src="media/light-new-shift.png" style="height: 100px; width:100px;"/>
+<img src="media/dark-new-shift.png" style="height: 100px; width:100px;"/>
 
