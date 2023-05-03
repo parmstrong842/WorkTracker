@@ -1,8 +1,9 @@
 package com.example.worktracker.ui
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.worktracker.Constants
+import com.example.worktracker.data.SharedPreferencesRepository
 import com.example.worktracker.data.Shift
 import com.example.worktracker.data.ShiftsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,15 +28,19 @@ data class ShiftUiState(
     val total: String,
 )
 
-class ShiftViewModel(private val shiftsRepository: ShiftsRepository): ViewModel() {
+class ShiftViewModel(private val shiftsRepository: ShiftsRepository, sharedPref: SharedPreferencesRepository): ViewModel() {
 
     private val _uiState: MutableStateFlow<ShiftUiState>
     val uiState: StateFlow<ShiftUiState>
 
-    private var startYear = getTimeStamp("u")
+    private var startYear: String
+    private val selectedTimeZone: ZoneId
 
     init{
-        Log.d("ShiftViewModel", "ShiftViewModel Created")
+        val timeZoneString = sharedPref.getString(Constants.TIME_ZONE_KEY, "UTC")
+        selectedTimeZone = ZoneId.of(timeZoneString)
+
+        startYear = getTimeStamp("u")
 
         val date = getTimeStamp("EEE, LLL d")
         val time = getTimeStamp("h:mm a")
@@ -111,16 +116,52 @@ class ShiftViewModel(private val shiftsRepository: ShiftsRepository): ViewModel(
         val breakTotal = getBreakForInsert(uiState.value.breakTotal)//0:00
         val shiftTotal = uiState.value.total//0:00
 
-        viewModelScope.launch {
-            shiftsRepository.insertItem(
-                Shift(
-                    date = date,
-                    shiftSpan = shiftSpan,
-                    breakTotal = breakTotal,
-                    shiftTotal = shiftTotal
-                )
+        val shift = Shift(
+                date = date,
+                shiftSpan = shiftSpan,
+                breakTotal = breakTotal,
+                shiftTotal = shiftTotal
             )
+        convertShiftToUTC(shift)
+
+        viewModelScope.launch {
+            shiftsRepository.insertItem(shift)
         }
+    }
+
+    private fun convertShiftToUTC(shift: Shift) {
+        val timeTokens = shift.shiftSpan.split(" - ")
+
+        val timestamp1 = "${shift.date}.${timeTokens[0]}"
+        val userZonedDateTime1 = getZonedDateTime(timestamp1)
+        val timestamp2 = "${shift.date}.${timeTokens[1]}"
+        val userZonedDateTime2 = getZonedDateTime(timestamp2)
+
+        if (userZonedDateTime2.isBefore(userZonedDateTime1)) {
+            userZonedDateTime2.plusDays(1)
+        }
+
+        val datePattern = DateTimeFormatter.ofPattern("yyyy.MM.dd")
+        val timePattern = DateTimeFormatter.ofPattern("h:mm a")
+
+        val newDate = userZonedDateTime1.format(datePattern)
+        val newTimeToken1 = userZonedDateTime1.format(timePattern)
+        val newTimeToken2 = userZonedDateTime2.format(timePattern)
+        val newShiftSpan = "$newTimeToken1 - $newTimeToken2"
+
+        shift.date = newDate
+        shift.shiftSpan = newShiftSpan
+    }
+
+    private fun getZonedDateTime(timestamp: String): ZonedDateTime {
+        val formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd.h:mm a")
+
+        val localDateTime = LocalDateTime.parse(timestamp, formatter)
+
+        val zonedDateTime = ZonedDateTime.of(localDateTime, selectedTimeZone)
+
+        val zoneId = ZoneId.of("UTC")
+        return zonedDateTime.withZoneSameInstant(zoneId)
     }
 
     private fun getBreakForInsert(minutes: String): String {
@@ -151,14 +192,9 @@ class ShiftViewModel(private val shiftsRepository: ShiftsRepository): ViewModel(
         return String.format("${if (negative) "-" else ""}%d:%02d", hours, minutes)
     }
 
-    private fun getTimeStamp(pattern: String, offset: String = "0:00"): String {
-        val offsetLocalTime = LocalTime.parse(offset, DateTimeFormatter.ofPattern("H:mm"))
-        val z = ZoneId.of("America/Chicago") // Or get the JVM’s current default time zone: ZoneId.systemDefault()
-        val time = ZonedDateTime.now(z)
-        return DateTimeFormatter.ofPattern(pattern).format(time
-                .plusHours(offsetLocalTime.hour.toLong())
-                .plusMinutes(offsetLocalTime.minute.toLong())
-        )
+    private fun getTimeStamp(pattern: String): String {
+        val time = ZonedDateTime.now(selectedTimeZone)
+        return DateTimeFormatter.ofPattern(pattern).format(time)
     }
 
     private fun getStringFromTime(hour: Int, minute: Int): String {

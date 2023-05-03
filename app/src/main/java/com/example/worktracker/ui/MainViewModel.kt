@@ -1,21 +1,18 @@
 package com.example.worktracker.ui
 
-import android.app.Application
-import android.content.Context
-import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.worktracker.Constants.breakStartKey
-import com.example.worktracker.Constants.breakTimeStampKey
-import com.example.worktracker.Constants.breakTotalKey
-import com.example.worktracker.Constants.clockedInKey
-import com.example.worktracker.Constants.onBreakKey
-import com.example.worktracker.Constants.prefsFileName
-import com.example.worktracker.Constants.shiftStartKey
-import com.example.worktracker.Constants.timeStampKey
+import com.example.worktracker.Constants
+import com.example.worktracker.Constants.BREAK_START_KEY
+import com.example.worktracker.Constants.BREAK_TIME_STAMP_KEY
+import com.example.worktracker.Constants.BREAK_TOTAL_KEY
+import com.example.worktracker.Constants.CLOCKED_IN_KEY
+import com.example.worktracker.Constants.ON_BREAK_KEY
+import com.example.worktracker.Constants.SHIFT_START_KEY
+import com.example.worktracker.Constants.TIME_STAMP_KEY
+import com.example.worktracker.data.SharedPreferencesRepository
 import com.example.worktracker.data.Shift
 import com.example.worktracker.data.ShiftsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +21,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -40,24 +39,29 @@ data class MainUiState(
     val breakCounter: String,
 )
 
-class MainViewModel(app: Application, private val shiftsRepository: ShiftsRepository) : AndroidViewModel(app) {
+class MainViewModel(private val shiftsRepository: ShiftsRepository, private val sharedPref: SharedPreferencesRepository) : ViewModel() {
 
     //TODO if shift is longer then 24h it messes up
-
-    private val sharedPref: SharedPreferences =
-        getApplication<Application>().getSharedPreferences(prefsFileName, Context.MODE_PRIVATE)
 
     private val _uiState: MutableStateFlow<MainUiState>
     val uiState: StateFlow<MainUiState>
 
-    init {
-        Log.d("MainViewModel", "MainViewModel Created")
+    private val selectedTimeZone: ZoneId
 
-        val clockedIn = sharedPref.getBoolean(clockedInKey, false)
-        val onBreak = sharedPref.getBoolean(onBreakKey, false)
-        val shiftStartTime = sharedPref.getString(shiftStartKey, "error")
-        val breakStartTime = sharedPref.getString(breakStartKey, "error")
-        val breakTotal = sharedPref.getString(breakTotalKey, "0:00")
+    init {
+        val timeZoneString = sharedPref.getString(Constants.TIME_ZONE_KEY, "UTC")
+        selectedTimeZone = ZoneId.of(timeZoneString)
+
+        val clockedIn = sharedPref.getBoolean(CLOCKED_IN_KEY, false)
+        val onBreak = sharedPref.getBoolean(ON_BREAK_KEY, false)
+
+        val timestampStart = sharedPref.getString(SHIFT_START_KEY, "error")
+        val shiftStartTime = if (timestampStart != "error") getDisplayTimeAtTimeZone(selectedTimeZone, timestampStart) else "error"
+
+        val timestampBreak = sharedPref.getString(BREAK_START_KEY, "error")
+        val breakStartTime = if (timestampBreak != "error") getDisplayTimeAtTimeZone(selectedTimeZone, timestampBreak) else "error"
+
+        val breakTotal = sharedPref.getString(BREAK_TOTAL_KEY, "0:00")
         val counter = getCounter()
         val breakCounter = getBreakCounter()
 
@@ -65,9 +69,9 @@ class MainViewModel(app: Application, private val shiftsRepository: ShiftsReposi
             MainUiState(
                 clockedIn,
                 onBreak,
-                checkNotNull(shiftStartTime),
-                checkNotNull(breakStartTime),
-                checkNotNull(breakTotal),
+                shiftStartTime,
+                breakStartTime,
+                breakTotal,
                 counter,
                 breakCounter
             )
@@ -90,16 +94,16 @@ class MainViewModel(app: Application, private val shiftsRepository: ShiftsReposi
     }
 
     private fun getCounter(): String {
-        if (sharedPref.getBoolean(clockedInKey, false)) {
+        if (sharedPref.getBoolean(CLOCKED_IN_KEY, false)) {
             val currentDateTime = getTimeStamp()
-            val clockedTime = checkNotNull(sharedPref.getString(timeStampKey, "")).substring(9)
+            val clockedTime = checkNotNull(sharedPref.getString(TIME_STAMP_KEY, "")).substring(9)
             val time = getTimeDiff(clockedTime, currentDateTime)
             // get break time
-            val breakTime = if (sharedPref.getBoolean(onBreakKey, false)) {
-                val breakTime = checkNotNull(sharedPref.getString(breakTimeStampKey, "")).substring(12)
+            val breakTime = if (sharedPref.getBoolean(ON_BREAK_KEY, false)) {
+                val breakTime = checkNotNull(sharedPref.getString(BREAK_TIME_STAMP_KEY, "")).substring(12)
                 getTimeDiff(breakTime, currentDateTime)
             } else {
-                checkNotNull(sharedPref.getString(breakTotalKey, "0:00"))
+                checkNotNull(sharedPref.getString(BREAK_TOTAL_KEY, "0:00"))
             }
             return reformatTime(subtractBreakFromTotal(breakTime, time))
         }
@@ -107,12 +111,12 @@ class MainViewModel(app: Application, private val shiftsRepository: ShiftsReposi
     }
 
     private fun getBreakCounter(): String {
-        if (sharedPref.getBoolean(onBreakKey, false)) {
+        if (sharedPref.getBoolean(ON_BREAK_KEY, false)) {
             val currentDateTime = getTimeStamp()
-            val breakTime = checkNotNull(sharedPref.getString(breakTimeStampKey, "")).substring(12)
+            val breakTime = checkNotNull(sharedPref.getString(BREAK_TIME_STAMP_KEY, "")).substring(12)
             return reformatTime(getTimeDiff(breakTime, currentDateTime))
         }
-        return reformatTime(checkNotNull(sharedPref.getString(breakTotalKey, "0:00")))
+        return reformatTime(checkNotNull(sharedPref.getString(BREAK_TOTAL_KEY, "0:00")))
     }
 
     private fun reformatTime(time: String): String {
@@ -126,11 +130,6 @@ class MainViewModel(app: Application, private val shiftsRepository: ShiftsReposi
         }
     }
 
-    //                                    clock                   break
-    //clocked in  / on break       clock out/end break          end break
-    //clocked in  / not break           clock out               start break
-    //clocked out / not break           clock in                 invalid
-
     fun updateClockedIn() {
         val clockedIn = uiState.value.clockedIn
 
@@ -138,47 +137,49 @@ class MainViewModel(app: Application, private val shiftsRepository: ShiftsReposi
             updateOnBreak()
         }
 
-        var shiftStartTime = uiState.value.shiftStartTime
         if (!clockedIn) { //clocking in
             //CLOCK_IN 2023.01.22.12:12 PM
-            val timestamp = "CLOCK_IN ${getTimeStamp()}"
-            shiftStartTime = if (timestamp[20] == '0') timestamp.substring(21, 28) else timestamp.substring(20, 28)
-            with (sharedPref.edit()) {
-                putBoolean(clockedInKey, true)
-                putString(shiftStartKey, shiftStartTime)
-                putString(timeStampKey, timestamp)
-                apply()
+            val timestamp = getTimeStamp()
+            val timestampLog = "CLOCK_IN $timestamp"
+
+            val shiftStartTimeUser = getDisplayTimeAtTimeZone(selectedTimeZone, timestamp)
+
+            sharedPref.putBoolean(CLOCKED_IN_KEY, true)
+            sharedPref.putString(SHIFT_START_KEY, timestamp)
+            sharedPref.putString(TIME_STAMP_KEY, timestampLog)
+
+            _uiState.update { currentState ->
+                currentState.copy(
+                    clockedIn = true,
+                    shiftStartTime = shiftStartTimeUser
+                )
             }
         } else { // clocking out
-            val timestamp = "${sharedPref.getString(timeStampKey, "")}CLOCK_OUT ${getTimeStamp()}"
+            val timestamp = "${sharedPref.getString(TIME_STAMP_KEY, "")}CLOCK_OUT ${getTimeStamp()}"
 
             createShiftAndInsert(timestamp)
 
-            with (sharedPref.edit()) {
-                putBoolean(clockedInKey, false)
-                remove(breakTotalKey)
-                remove(timeStampKey)
-                apply()
+            sharedPref.putBoolean(CLOCKED_IN_KEY, false)
+            sharedPref.remove(BREAK_TOTAL_KEY)
+            sharedPref.remove(TIME_STAMP_KEY)
+
+            _uiState.update { currentState ->
+                currentState.copy(
+                    clockedIn = false,
+                )
             }
         }
-        _uiState.update { currentState ->
-            currentState.copy(
-                clockedIn = !clockedIn,
-                shiftStartTime = shiftStartTime
-            )
-        }
     }
-
 
     private fun createShiftAndInsert(timestamp: String) {
         //CLOCK_IN 2023.01.22.12:12 PMCLOCK_OUT 2023.01.22.12:12 PM
 
         val date = timestamp.substring(9, 19)
 
-        val breakTime = sharedPref.getString(breakTotalKey, "0:00")
+        val breakTime = sharedPref.getString(BREAK_TOTAL_KEY, "0:00")
 
         val shiftLength = getTimeDiff(timestamp.substring(9, 28), timestamp.substring(38))
-        val shiftTotal = subtractBreakFromTotal(breakTime!!, shiftLength)
+        val shiftTotal = subtractBreakFromTotal(breakTime, shiftLength)
 
         val timeStart = if (timestamp[20] == '0') timestamp.substring(21, 28) else timestamp.substring(20, 28)
         val timeEnd = if (timestamp[49] == '0') timestamp.substring(50) else timestamp.substring(49)
@@ -202,39 +203,40 @@ class MainViewModel(app: Application, private val shiftsRepository: ShiftsReposi
             return
         }
 
-        var breakStartTime = uiState.value.breakStartTime
-        var breakTotal = uiState.value.breakTotal
         if (!onBreak) {
-            val timestamp = "START_BREAK ${getTimeStamp()}"
-            breakStartTime = if (timestamp[23] == '0') timestamp.substring(24, 31) else timestamp.substring(23, 31)
-            with (sharedPref.edit()) {
-                putBoolean(onBreakKey, true)
-                putString(breakStartKey, breakStartTime)
-                putString(breakTimeStampKey, timestamp)
-                apply()
+            val timestamp = getTimeStamp()
+            val timestampLog = "START_BREAK $timestamp"
+
+            val breakStartTime = getDisplayTimeAtTimeZone(selectedTimeZone, timestamp)
+
+            sharedPref.putBoolean(ON_BREAK_KEY, true)
+            sharedPref.putString(BREAK_START_KEY, timestamp)
+            sharedPref.putString(BREAK_TIME_STAMP_KEY, timestampLog)
+
+            _uiState.update { currentState ->
+                currentState.copy(
+                    onBreak = true,
+                    breakStartTime = breakStartTime,
+                )
             }
         } else {
-            val timestamp = "${sharedPref.getString(breakTimeStampKey, "")}END_BREAK ${getTimeStamp()}"
+            val timestamp = "${sharedPref.getString(BREAK_TIME_STAMP_KEY, "")}END_BREAK ${getTimeStamp()}"
 
-            breakTotal = getBreakTotal(timestamp)
+            val breakTotal = getBreakTotal(timestamp)
 
-            with (sharedPref.edit()) {
-                putBoolean(onBreakKey, false)
-                putString(breakTotalKey, breakTotal)
-                remove(breakTimeStampKey)
-                apply()
+            sharedPref.putBoolean(ON_BREAK_KEY, false)
+            sharedPref.putString(BREAK_TOTAL_KEY, breakTotal)
+            sharedPref.remove(BREAK_TIME_STAMP_KEY)
+
+            _uiState.update { currentState ->
+                currentState.copy(
+                    onBreak = false,
+                    breakTotal = breakTotal
+                )
             }
         }
-
-        _uiState.update { currentState ->
-            currentState.copy(
-                onBreak = !onBreak,
-                breakStartTime = breakStartTime,
-                breakTotal = breakTotal
-            )
-        }
-
     }
+
 
     private fun getBreakTotal(timestamp: String): String {
         //START_BREAK 2023.01.17.19:50 AMEND_BREAK2023.01.17.19:50 AM
@@ -275,8 +277,24 @@ class MainViewModel(app: Application, private val shiftsRepository: ShiftsReposi
     }
 
     private fun getTimeStamp(): String {
-        val z = ZoneId.of("America/Chicago") // Or get the JVM’s current default time zone: ZoneId.systemDefault()
-        val time = ZonedDateTime.now(z)
-        return DateTimeFormatter.ofPattern("yyyy.MM.dd.hh:mm a").format(time)
+        val utcInstant = Instant.now()
+        val utcZoneId = ZoneId.of("UTC")
+        val utcZonedDateTime = ZonedDateTime.ofInstant(utcInstant, utcZoneId)
+
+        val formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd.hh:mm a")
+        return formatter.format(utcZonedDateTime)
+    }
+
+    private fun getDisplayTimeAtTimeZone(timeZone: ZoneId, timestamp: String): String {
+        val formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd.hh:mm a")
+        val localDateTime: LocalDateTime = LocalDateTime.parse(timestamp, formatter)
+
+        val zoneId = ZoneId.of("UTC")
+        val zonedDateTime = ZonedDateTime.of(localDateTime, zoneId)
+
+        val targetZonedDateTime = zonedDateTime.withZoneSameInstant(timeZone)
+
+        val outputFormatter = DateTimeFormatter.ofPattern("h:mm a")
+        return targetZonedDateTime.format(outputFormatter)
     }
 }

@@ -4,34 +4,6 @@ plugins {
     id 'com.google.devtools.ksp' version "1.7.20-1.0.8"
 }
 
-import com.android.tools.profgen.ArtProfileKt
-import com.android.tools.profgen.ArtProfileSerializer
-import com.android.tools.profgen.DexFile
-
-project.afterEvaluate {
-    tasks.each { task ->
-        if (task.name.startsWith("compile") && task.name.endsWith("ReleaseArtProfile")) {
-            task.doLast {
-                outputs.files.each { file ->
-                    if (file.name.endsWith(".profm")) {
-                        println("Sorting ${file} ...")
-                        def version = ArtProfileSerializer.valueOf("METADATA_0_0_2")
-                        def profile = ArtProfileKt.ArtProfile(file)
-                        def keys = new ArrayList(profile.profileData.keySet())
-                        def sortedData = new LinkedHashMap()
-                        Collections.sort keys, new DexFile.Companion()
-                        keys.each { key -> sortedData[key] = profile.profileData[key] }
-                        new FileOutputStream(file).with {
-                            write(version.magicBytes$profgen)
-                            write(version.versionBytes$profgen)
-                            version.write$profgen(it, sortedData, "")
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
 android {
     namespace 'com.example.worktracker'
@@ -79,8 +51,8 @@ android {
 dependencies {
 
     //Room
-    implementation "androidx.room:room-runtime:$room_version"
     implementation 'androidx.test:monitor:1.5.0'
+    implementation "androidx.room:room-runtime:$room_version"
     ksp "androidx.room:room-compiler:$room_version"
     implementation "androidx.room:room-ktx:$room_version"
     implementation "androidx.work:work-runtime-ktx:2.7.1"

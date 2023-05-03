@@ -13,6 +13,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,6 +35,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScreen(
     viewShiftsOnClick: () -> Unit = {},
+    navigateToSettings: () -> Unit,
     viewModel: MainViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
 
@@ -57,6 +59,7 @@ fun MainScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val showMenu = remember { mutableStateOf(false) }
     Scaffold(snackbarHost = {
         SnackbarHost(snackbarHostState) { data ->
             Snackbar(
@@ -77,6 +80,28 @@ fun MainScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Work Tracker") },
+                actions = {
+                    Box {
+                        IconButton(onClick = { showMenu.value = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Settings"
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMenu.value,
+                            onDismissRequest = { showMenu.value = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(text = "Settings") },
+                                onClick = {
+                                    showMenu.value = false
+                                    navigateToSettings()
+                                }
+                            )
+                        }
+                    }
+                }
             )
         }
     ) {
@@ -194,7 +219,8 @@ fun MainScreen(
                             )
                         }
                     }
-                    viewModel.updateClockedIn() },
+                    viewModel.updateClockedIn()
+                },
                 modifier = Modifier.width(140.dp)
             ) {
                 Text(

@@ -13,6 +13,7 @@ enum class Screen {
     Main,
     Log,
     Shift,
+    Settings,
 }
 
 @Composable
@@ -26,15 +27,16 @@ fun WorkNavGraph(modifier: Modifier = Modifier) {
     ) {
         composable(route = Screen.Main.name) {
             MainScreen(
-                viewShiftsOnClick = { navController.navigate(Screen.Log.name) }
+                viewShiftsOnClick = { navController.navigate(Screen.Log.name) },
+                navigateToSettings = { navController.navigate(Screen.Settings.name) }
             )
         }
         composable(route = Screen.Log.name) {
             LogScreen(
                 navigateToShift = { navController.navigate(Screen.Shift.name) },
-                navigateUp = { navController.popBackStack() },
+                navigateBack = { navController.popBackStack() },
                 navigateToItemUpdate = {
-                    navController.navigate("${ShiftEditDestination.route}/${it}")
+                    navController.navigate("${ShiftEditDestination.route}/$it")
                 }
             )
         }
@@ -59,6 +61,14 @@ fun WorkNavGraph(modifier: Modifier = Modifier) {
                     navController.getBackStackEntry(Screen.Log.name).viewModelStore.clear()
                     navController.popBackStack()
                 }
+            )
+        }
+        composable(route = Screen.Settings.name) {
+            SettingsScreen(
+                navigateBack = {
+                    navController.getBackStackEntry(Screen.Main.name).viewModelStore.clear()
+                    navController.popBackStack()
+                },
             )
         }
     }

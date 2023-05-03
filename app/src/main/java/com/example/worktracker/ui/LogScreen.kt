@@ -28,7 +28,7 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogScreen(
-    navigateUp: () -> Unit,
+    navigateBack: () -> Unit,
     navigateToShift: () -> Unit = {},
     navigateToItemUpdate: (Int) -> Unit,
     viewModel: LogViewModel = viewModel(factory = AppViewModelProvider.Factory)
@@ -42,7 +42,7 @@ fun LogScreen(
         topBar = {
             LogTopAppBar(
                 title = "Shifts",
-                navigateUp = navigateUp,
+                navigateBack = navigateBack,
                 createShift = navigateToShift
             )
         },
@@ -217,14 +217,14 @@ fun ShiftItem(
 fun LogTopAppBar(
     title: String,
     modifier: Modifier = Modifier,
-    navigateUp: () -> Unit = {},
+    navigateBack: () -> Unit = {},
     createShift: () -> Unit = {}
 ) {
     TopAppBar(
         title = { Text(title) },
         modifier = modifier,
         navigationIcon = {
-            IconButton(onClick = navigateUp) {
+            IconButton(onClick = navigateBack) {
                 Icon(
                     imageVector = Icons.Filled.ArrowBack,
                     contentDescription = "Back"
