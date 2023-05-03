@@ -6,26 +6,38 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.example.worktracker.ui.LogViewModel
-import com.example.worktracker.ui.MainViewModel
-import com.example.worktracker.ui.ShiftEditViewModel
-import com.example.worktracker.ui.ShiftViewModel
+import com.example.worktracker.ui.*
 
 object AppViewModelProvider {
     val Factory = viewModelFactory {
         initializer {
-            MainViewModel(workTrackerApplication(),workTrackerApplication().container.shiftsRepository)
+            MainViewModel(
+                workTrackerApplication().container.shiftsRepository,
+                workTrackerApplication().container.sharedPreferencesRepository
+            )
         }
         initializer {
-            LogViewModel(workTrackerApplication().container.shiftsRepository)
+            LogViewModel(
+                workTrackerApplication().container.shiftsRepository,
+                workTrackerApplication().container.sharedPreferencesRepository
+            )
         }
         initializer {
-            ShiftViewModel(workTrackerApplication().container.shiftsRepository)
+            ShiftViewModel(
+                workTrackerApplication().container.shiftsRepository,
+                workTrackerApplication().container.sharedPreferencesRepository
+            )
         }
         initializer {
             ShiftEditViewModel(
                 this.createSavedStateHandle(),
-                workTrackerApplication().container.shiftsRepository
+                workTrackerApplication().container.shiftsRepository,
+                workTrackerApplication().container.sharedPreferencesRepository
+            )
+        }
+        initializer {
+            SettingsViewModel(
+                workTrackerApplication().container.sharedPreferencesRepository
             )
         }
     }

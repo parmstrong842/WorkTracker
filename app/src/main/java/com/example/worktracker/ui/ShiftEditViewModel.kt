@@ -3,6 +3,8 @@ package com.example.worktracker.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.worktracker.Constants
+import com.example.worktracker.data.SharedPreferencesRepository
 import com.example.worktracker.data.Shift
 import com.example.worktracker.data.ShiftsRepository
 import kotlinx.coroutines.flow.*
@@ -18,6 +20,7 @@ import kotlin.math.abs
 class ShiftEditViewModel(
     savedStateHandle: SavedStateHandle,
     private val shiftsRepository: ShiftsRepository,
+    sharedPreferencesRepository: SharedPreferencesRepository
 ) : ViewModel() {
 
     private val shiftId: Int = checkNotNull(savedStateHandle[ShiftEditDestination.shiftIdArg])
@@ -26,16 +29,20 @@ class ShiftEditViewModel(
     val uiState: StateFlow<ShiftUiState>
 
     private lateinit var startYear: String
+    private val selectedTimeZone: ZoneId
 
     init {
+        val timeZoneString = sharedPreferencesRepository.getString(Constants.TIME_ZONE_KEY, "UTC")
+        selectedTimeZone = ZoneId.of(timeZoneString)
+
+        _uiState = MutableStateFlow(ShiftUiState("---", "---", "---", "---", "---", "---"))
+        uiState = _uiState.asStateFlow()
+
         viewModelScope.launch {
             val shift = fetchItem()
             updateUiState(checkNotNull(shift))
             startYear = shift.date.split('.')[0]
         }
-
-        _uiState = MutableStateFlow(ShiftUiState("---", "---", "---", "---", "---", "---"))
-        uiState = _uiState.asStateFlow()
     }
 
     private suspend fun fetchItem(): Shift? {
@@ -152,6 +159,8 @@ class ShiftEditViewModel(
 
 
     private fun buildShiftUiState(shift: Shift): ShiftUiState {
+        convertShiftToDifferentTimeZone(shift, ZoneId.of("UTC"), selectedTimeZone)
+
         val date = LocalDate.parse(shift.date, DateTimeFormatter.ofPattern("u.MM.dd"))
         val startDate = DateTimeFormatter.ofPattern("EEE, LLL d").format(date)
         val times = shift.shiftSpan.split(" - ")
@@ -182,11 +191,43 @@ class ShiftEditViewModel(
         val breakTotal = getBreakForInsert(uiState.value.breakTotal)//0:00
         val shiftTotal = uiState.value.total//0:00
 
+        val shift = Shift(shiftId, date, shiftSpan, breakTotal, shiftTotal)
+        convertShiftToDifferentTimeZone(shift, selectedTimeZone, ZoneId.of("UTC"))
+
         viewModelScope.launch {
-            shiftsRepository.updateItem(
-                Shift(shiftId, date, shiftSpan, breakTotal, shiftTotal)
-            )
+            shiftsRepository.updateItem(shift)
         }
+    }
+
+    private fun convertShiftToDifferentTimeZone(shift: Shift, startZone: ZoneId, endZone: ZoneId) {
+        val timeTokens = shift.shiftSpan.split(" - ")
+
+        val timestamp1 = "${shift.date}.${timeTokens[0]}"
+        val zonedDateTime1 = getZonedDateTime(timestamp1, startZone, endZone)
+        val timestamp2 = "${shift.date}.${timeTokens[1]}"
+        val zonedDateTime2 = getZonedDateTime(timestamp2, startZone, endZone)
+
+        if (zonedDateTime2.isBefore(zonedDateTime1)) {
+            zonedDateTime2.plusDays(1)
+        }
+
+        val datePattern = DateTimeFormatter.ofPattern("yyyy.MM.dd")
+        val timePattern = DateTimeFormatter.ofPattern("h:mm a")
+
+        val newDate = zonedDateTime1.format(datePattern)
+        val newTimeToken1 = zonedDateTime1.format(timePattern)
+        val newTimeToken2 = zonedDateTime2.format(timePattern)
+
+        val newShiftSpan = "$newTimeToken1 - $newTimeToken2"
+        shift.date = newDate
+        shift.shiftSpan = newShiftSpan
+    }
+
+    private fun getZonedDateTime(timestamp: String, startZone: ZoneId, endZone: ZoneId): ZonedDateTime {
+        val formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd.h:mm a")
+        val localDateTime = LocalDateTime.parse(timestamp, formatter)
+        val zonedDateTime = ZonedDateTime.of(localDateTime, startZone)
+        return zonedDateTime.withZoneSameInstant(endZone)
     }
 
     fun deleteShift() {

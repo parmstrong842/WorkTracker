@@ -8,7 +8,7 @@ data class Shift(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     var date: String,
-    val shiftSpan: String,
+    var shiftSpan: String,
     val breakTotal: String,
     val shiftTotal: String,
 )

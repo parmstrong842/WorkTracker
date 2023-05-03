@@ -1,17 +1,17 @@
 package com.example.worktracker.ui
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.worktracker.Constants.START_OF_WEEK_KEY
+import com.example.worktracker.Constants.TIME_ZONE_KEY
+import com.example.worktracker.data.SharedPreferencesRepository
 import com.example.worktracker.data.Shift
 import com.example.worktracker.data.ShiftsRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.time.DayOfWeek
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.ZonedDateTime
+import java.time.*
 import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAdjusters
 
 data class LogUiState(
     val itemList: List<Shift> = listOf(),
@@ -20,22 +20,71 @@ data class LogUiState(
     val tabState: Int = 0,
 )
 
-class LogViewModel(private val shiftsRepository: ShiftsRepository) : ViewModel() {
+class LogViewModel(
+    private val shiftsRepository: ShiftsRepository,
+    sharedPreferencesRepository: SharedPreferencesRepository
+) : ViewModel() {
 
     private val _uiState: MutableStateFlow<LogUiState>
     val uiState: StateFlow<LogUiState>
 
+    private val selectedTimeZone: ZoneId
+    private val selectedStartOfWeek: DayOfWeek
+
     private var allShiftsList = listOf<Shift>()
 
     init {
-        Log.d("LogViewModel", "LogViewModel Created")
+        val timeZoneString = sharedPreferencesRepository.getString(TIME_ZONE_KEY, "UTC")
+        selectedTimeZone = ZoneId.of(timeZoneString)
+
+        val dayOfWeekString = sharedPreferencesRepository.getString(START_OF_WEEK_KEY, "SUNDAY")
+        selectedStartOfWeek = DayOfWeek.valueOf(dayOfWeekString)
+
+        _uiState = MutableStateFlow(LogUiState(startDate = getStartOfWeek(selectedStartOfWeek)))
+        uiState = _uiState.asStateFlow()
+
         viewModelScope.launch {
-            allShiftsList = shiftsRepository.getAllItemsStream()
+            allShiftsList = convertShiftsToUserTimeZone(shiftsRepository.getAllItemsStream())
             updateItemList()
         }
+    }
 
-        _uiState = MutableStateFlow(LogUiState(listOf(), getStartOfWeek()))
-        uiState = _uiState.asStateFlow()
+    private fun convertShiftsToUserTimeZone(list: List<Shift>): List<Shift> {
+        list.forEach {
+            val timeTokens = it.shiftSpan.split(" - ")
+
+            val timestamp1 = "${it.date}.${timeTokens[0]}"
+            val userZonedDateTime1 = getZonedDateTime(timestamp1)
+            val timestamp2 = "${it.date}.${timeTokens[1]}"
+            val userZonedDateTime2 = getZonedDateTime(timestamp2)
+
+            if (userZonedDateTime2.isBefore(userZonedDateTime1)) {
+                userZonedDateTime2.plusDays(1)
+            }
+
+            val datePattern = DateTimeFormatter.ofPattern("yyyy.MM.dd")
+            val timePattern = DateTimeFormatter.ofPattern("h:mm a")
+
+            val newDate = userZonedDateTime1.format(datePattern)
+            val newTimeToken1 = userZonedDateTime1.format(timePattern)
+            val newTimeToken2 = userZonedDateTime2.format(timePattern)
+
+            val newShiftSpan = "$newTimeToken1 - $newTimeToken2"
+            it.date = newDate
+            it.shiftSpan = newShiftSpan
+        }
+        return list
+    }
+
+    private fun getZonedDateTime(timestamp: String): ZonedDateTime {
+        val formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd.h:mm a")
+
+        val localDateTime = LocalDateTime.parse(timestamp, formatter)
+
+        val zoneId = ZoneId.of("UTC")
+        val zonedDateTime = ZonedDateTime.of(localDateTime, zoneId)
+
+        return zonedDateTime.withZoneSameInstant(selectedTimeZone)
     }
 
     private fun updateItemList() {
@@ -143,9 +192,9 @@ class LogViewModel(private val shiftsRepository: ShiftsRepository) : ViewModel()
     }
 
     private fun getWeekDuration(): Pair<LocalDate, LocalDate> {
-        val sunday = getStartOfWeek()
-        val nextSunday = sunday.plusWeeks(1)
-        return Pair(sunday, nextSunday)
+        val start = getStartOfWeek(selectedStartOfWeek)
+        val end = start.plusWeeks(1)
+        return Pair(start, end)
     }
 
     private fun getMonthDuration(): Pair<LocalDate, LocalDate> {
@@ -160,16 +209,13 @@ class LogViewModel(private val shiftsRepository: ShiftsRepository) : ViewModel()
         return Pair(start, end)
     }
 
-    private fun getStartOfWeek(): LocalDate {
-        var now = ZonedDateTime.now(ZoneId.of("America/Chicago"))
-        while (now.dayOfWeek != DayOfWeek.SUNDAY) {
-            now = now.minusDays(1)
-        }
-        return now.toLocalDate()
+    private fun getStartOfWeek(selectedDayOfWeek: DayOfWeek): LocalDate {
+        val today = LocalDate.now()
+        return today.with(TemporalAdjusters.previousOrSame(selectedDayOfWeek))
     }
 
     private fun getStartOfMonth(): LocalDate {
-        var now = ZonedDateTime.now(ZoneId.of("America/Chicago"))
+        var now = LocalDateTime.now()
         while (now.dayOfMonth != 1) {
             now = now.minusDays(1)
         }
@@ -177,7 +223,7 @@ class LogViewModel(private val shiftsRepository: ShiftsRepository) : ViewModel()
     }
 
     private fun getStartOfYear(): LocalDate {
-        var now = ZonedDateTime.now(ZoneId.of("America/Chicago"))
+        var now = LocalDateTime.now()
         while (now.dayOfYear != 1) {
             now = now.minusDays(1)
         }

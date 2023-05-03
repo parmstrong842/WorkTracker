@@ -13,6 +13,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,11 +29,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.worktracker.AppViewModelProvider
 import com.example.worktracker.MyNotification
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLifecycleComposeApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     viewShiftsOnClick: () -> Unit = {},
+    navigateToSettings: () -> Unit,
     viewModel: MainViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
 
@@ -43,11 +46,62 @@ fun MainScreen(
         CheckPermissions(context)
     }
 
+    class SnackbarVisualsImpl(
+        override val message: String,
+    ) : SnackbarVisuals {
+        override val actionLabel: String
+            get() = ""
+        override val withDismissAction: Boolean
+            get() = true
+        override val duration: SnackbarDuration
+            get() = SnackbarDuration.Short
+    }
 
-    Scaffold(
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val showMenu = remember { mutableStateOf(false) }
+    Scaffold(snackbarHost = {
+        SnackbarHost(snackbarHostState) { data ->
+            Snackbar(
+                modifier = Modifier.padding(horizontal = 80.dp, vertical = 10.dp),
+                dismissAction = {
+                    IconButton(onClick = { data.dismiss() }) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Dismiss snackbar")
+                    }
+                }
+            ) {
+                Text(
+                    text = data.visuals.message,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
+    },
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Work Tracker") },
+                actions = {
+                    Box {
+                        IconButton(onClick = { showMenu.value = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Settings"
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMenu.value,
+                            onDismissRequest = { showMenu.value = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(text = "Settings") },
+                                onClick = {
+                                    showMenu.value = false
+                                    navigateToSettings()
+                                }
+                            )
+                        }
+                    }
+                }
             )
         }
     ) {
@@ -159,8 +213,14 @@ fun MainScreen(
                         )
                     } else {
                         MyNotification().cancelNotification(context)
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                SnackbarVisualsImpl("Shift Saved")
+                            )
+                        }
                     }
-                    viewModel.updateClockedIn() },
+                    viewModel.updateClockedIn()
+                },
                 modifier = Modifier.width(140.dp)
             ) {
                 Text(

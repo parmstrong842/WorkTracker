@@ -5,9 +5,9 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.example.worktracker.Constants.clockedInKey
-import com.example.worktracker.Constants.onBreakKey
-import com.example.worktracker.Constants.prefsFileName
+import com.example.worktracker.Constants.CLOCKED_IN_KEY
+import com.example.worktracker.Constants.ON_BREAK_KEY
+import com.example.worktracker.Constants.PREFS_FILE_NAME
 import com.example.worktracker.ui.WorkNavGraph
 import com.example.worktracker.ui.theme.WorkTrackerTheme
 
@@ -27,9 +27,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkIfClockedIn() {
-        val sharedPref: SharedPreferences = application.getSharedPreferences(prefsFileName, Context.MODE_PRIVATE)
-        val clockedIn = sharedPref.getBoolean(clockedInKey, false)
-        val onBreak = sharedPref.getBoolean(onBreakKey, false)
+        val sharedPref: SharedPreferences = application.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
+        val clockedIn = sharedPref.getBoolean(CLOCKED_IN_KEY, false)
+        val onBreak = sharedPref.getBoolean(ON_BREAK_KEY, false)
 
         if (clockedIn) {
             if(onBreak) {
