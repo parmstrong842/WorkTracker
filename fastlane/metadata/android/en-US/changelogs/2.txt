@@ -1,0 +1,6 @@
+## [1.1] - 2023-08-14
+
+### Added
+- Support for time zones
+- Ability to change start of week
+- Minor visual improvements
