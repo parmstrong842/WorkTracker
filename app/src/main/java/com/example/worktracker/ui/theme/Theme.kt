@@ -9,7 +9,9 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -24,14 +26,13 @@ private val DarkColorScheme = darkColorScheme(
     onTertiary = Color.White,
     surface = grey2
 )
-
 private val LightColorScheme = lightColorScheme(
     primary = blue1,
     secondary = blue4,
     tertiary = blue5,
     onTertiary = Color.Black,
     surface = blue2,
-    background = blue3
+    background = blue3,
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
@@ -43,6 +44,7 @@ private val LightColorScheme = lightColorScheme(
     onSurface = Color(0xFF1C1B1F),
     */
 )
+val LocalIsDarkMode = compositionLocalOf { false }
 
 @Composable
 fun WorkTrackerTheme(
@@ -68,10 +70,11 @@ fun WorkTrackerTheme(
             WindowCompat.getInsetsController(currentWindow, view).isAppearanceLightStatusBars = darkTheme
         }
     }
-
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(LocalIsDarkMode provides darkTheme) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

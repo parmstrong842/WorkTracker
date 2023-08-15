@@ -1,7 +1,6 @@
 package com.example.worktracker.ui
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.worktracker.Constants
 import com.example.worktracker.data.SharedPreferencesRepository
 import com.example.worktracker.data.Shift
@@ -10,7 +9,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import java.time.*
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatterBuilder
@@ -110,7 +108,7 @@ class ShiftViewModel(private val shiftsRepository: ShiftsRepository, sharedPref:
         }
     }
 
-    fun insertShift() {
+    suspend fun insertShift() {
         val date = getDateForInsert(startYear, uiState.value.startDate, uiState.value.startTime)//2023.01.24
         val shiftSpan = "${uiState.value.startTime} - ${uiState.value.endTime}"//6:21 PM - 6:23 PM
         val breakTotal = getBreakForInsert(uiState.value.breakTotal)//0:00
@@ -124,9 +122,7 @@ class ShiftViewModel(private val shiftsRepository: ShiftsRepository, sharedPref:
             )
         convertShiftToUTC(shift)
 
-        viewModelScope.launch {
-            shiftsRepository.insertItem(shift)
-        }
+        shiftsRepository.insertItem(shift)
     }
 
     private fun convertShiftToUTC(shift: Shift) {

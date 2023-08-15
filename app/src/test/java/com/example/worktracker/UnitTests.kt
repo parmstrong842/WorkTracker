@@ -8,10 +8,28 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatterBuilder
 import java.time.temporal.ChronoField
 import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalAdjusters
 import java.util.*
 
 class UnitTests {
 
+
+    @Test
+    fun testGetStartOfWeek() {
+        var zoneId = ZoneId.of("America/Chicago")
+        var startOfWeek = ZonedDateTime.of(2023, 7, 30, 0, 0, 0, 0, zoneId)
+        var now = ZonedDateTime.of(2023, 8, 5, 0, 0, 0, 0, zoneId)
+        assertEquals(startOfWeek.toLocalDate(), getStartOfWeek(DayOfWeek.SUNDAY, now))
+
+        zoneId = ZoneId.of("UTC")
+        startOfWeek = ZonedDateTime.of(2023, 8, 6, 0, 0, 0, 0, zoneId)
+        now = ZonedDateTime.of(2023, 8, 6, 0, 0, 0, 0, zoneId)
+        assertEquals(startOfWeek.toLocalDate(), getStartOfWeek(DayOfWeek.SUNDAY, now))
+    }
+
+    private fun getStartOfWeek(selectedDayOfWeek: DayOfWeek, now: ZonedDateTime): LocalDate {
+        return now.with(TemporalAdjusters.previousOrSame(selectedDayOfWeek)).toLocalDate()
+    }
 
     @Test
     fun subtractBreakFromTotalTest() {

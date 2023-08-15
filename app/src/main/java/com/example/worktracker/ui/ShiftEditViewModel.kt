@@ -185,7 +185,7 @@ class ShiftEditViewModel(
         )
     }
 
-    fun updateShift() {
+    suspend fun updateShift() {
         val date = getDateForInsert(startYear, uiState.value.startDate, uiState.value.startTime)//2023.01.24
         val shiftSpan = "${uiState.value.startTime} - ${uiState.value.endTime}"//6:21 PM - 6:23 PM
         val breakTotal = getBreakForInsert(uiState.value.breakTotal)//0:00
@@ -194,9 +194,7 @@ class ShiftEditViewModel(
         val shift = Shift(shiftId, date, shiftSpan, breakTotal, shiftTotal)
         convertShiftToDifferentTimeZone(shift, selectedTimeZone, ZoneId.of("UTC"))
 
-        viewModelScope.launch {
-            shiftsRepository.updateItem(shift)
-        }
+        shiftsRepository.updateItem(shift)
     }
 
     private fun convertShiftToDifferentTimeZone(shift: Shift, startZone: ZoneId, endZone: ZoneId) {
@@ -230,12 +228,10 @@ class ShiftEditViewModel(
         return zonedDateTime.withZoneSameInstant(endZone)
     }
 
-    fun deleteShift() {
-        viewModelScope.launch {
-            shiftsRepository.deleteItem(
-                Shift(shiftId, "", "", "", "")
-            )
-        }
+    suspend fun deleteShift() {
+        shiftsRepository.deleteItem(
+            Shift(shiftId, "", "", "", "")
+        )
     }
 
     private fun getBreakInMinutes(breakTotal: String): String {

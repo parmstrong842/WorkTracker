@@ -22,7 +22,7 @@ data class LogUiState(
 
 class LogViewModel(
     private val shiftsRepository: ShiftsRepository,
-    sharedPreferencesRepository: SharedPreferencesRepository
+    sharedPref: SharedPreferencesRepository
 ) : ViewModel() {
 
     private val _uiState: MutableStateFlow<LogUiState>
@@ -34,13 +34,13 @@ class LogViewModel(
     private var allShiftsList = listOf<Shift>()
 
     init {
-        val timeZoneString = sharedPreferencesRepository.getString(TIME_ZONE_KEY, "UTC")
+        val timeZoneString = sharedPref.getString(TIME_ZONE_KEY, "UTC")
         selectedTimeZone = ZoneId.of(timeZoneString)
 
-        val dayOfWeekString = sharedPreferencesRepository.getString(START_OF_WEEK_KEY, "SUNDAY")
+        val dayOfWeekString = sharedPref.getString(START_OF_WEEK_KEY, "SUNDAY")
         selectedStartOfWeek = DayOfWeek.valueOf(dayOfWeekString)
 
-        _uiState = MutableStateFlow(LogUiState(startDate = getStartOfWeek(selectedStartOfWeek)))
+        _uiState = MutableStateFlow(LogUiState(startDate = getStartOfWeek(selectedStartOfWeek, selectedTimeZone)))
         uiState = _uiState.asStateFlow()
 
         viewModelScope.launch {
@@ -192,42 +192,36 @@ class LogViewModel(
     }
 
     private fun getWeekDuration(): Pair<LocalDate, LocalDate> {
-        val start = getStartOfWeek(selectedStartOfWeek)
+        val start = getStartOfWeek(selectedStartOfWeek, selectedTimeZone)
         val end = start.plusWeeks(1)
         return Pair(start, end)
     }
 
     private fun getMonthDuration(): Pair<LocalDate, LocalDate> {
-        val start = getStartOfMonth()
+        val start = getStartOfMonth(selectedTimeZone)
         val end = start.plusMonths(1)
         return Pair(start, end)
     }
 
     private fun getYearDuration(): Pair<LocalDate, LocalDate> {
-        val start = getStartOfYear()
+        val start = getStartOfYear(selectedTimeZone)
         val end = start.plusYears(1)
         return Pair(start, end)
     }
 
-    private fun getStartOfWeek(selectedDayOfWeek: DayOfWeek): LocalDate {
-        val today = LocalDate.now()
-        return today.with(TemporalAdjusters.previousOrSame(selectedDayOfWeek))
+    private fun getStartOfWeek(selectedDayOfWeek: DayOfWeek, selectedZone: ZoneId): LocalDate {
+        val now = ZonedDateTime.now(selectedZone)
+        return now.with(TemporalAdjusters.previousOrSame(selectedDayOfWeek)).toLocalDate()
     }
 
-    private fun getStartOfMonth(): LocalDate {
-        var now = LocalDateTime.now()
-        while (now.dayOfMonth != 1) {
-            now = now.minusDays(1)
-        }
-        return now.toLocalDate()
+    private fun getStartOfMonth(selectedZone: ZoneId): LocalDate {
+        val now = ZonedDateTime.now(selectedZone)
+        return now.withDayOfMonth(1).toLocalDate()
     }
 
-    private fun getStartOfYear(): LocalDate {
-        var now = LocalDateTime.now()
-        while (now.dayOfYear != 1) {
-            now = now.minusDays(1)
-        }
-        return now.toLocalDate()
+    private fun getStartOfYear(selectedZone: ZoneId): LocalDate {
+        val now = ZonedDateTime.now(selectedZone)
+        return now.withDayOfYear(1).toLocalDate()
     }
 
     private fun getShiftsForDatesBetween(shiftList: List<Shift>, start: LocalDate, end: LocalDate): List<Shift> {

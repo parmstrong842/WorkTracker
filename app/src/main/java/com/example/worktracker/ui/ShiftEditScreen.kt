@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.worktracker.AppViewModelProvider
+import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -227,10 +228,13 @@ fun ShiftEditScreen(
                 Spacer(modifier = Modifier.weight(weight))
             }
             Spacer(modifier = Modifier.padding(vertical = 40.dp))
+            val scope = rememberCoroutineScope()
             Button(
                 onClick = {
-                    viewModel.updateShift()
-                    navigateBack()
+                    scope.launch {
+                        viewModel.updateShift()
+                        navigateBack()
+                    }
                 },
                 modifier = Modifier.width(100.dp)
             ) {
@@ -242,8 +246,10 @@ fun ShiftEditScreen(
             Spacer(modifier = Modifier.padding(vertical = 10.dp))
             Button(
                 onClick = {
-                    viewModel.deleteShift()
-                    navigateBack()
+                    scope.launch {
+                        viewModel.deleteShift()
+                        navigateBack()
+                    }
                 },
                 modifier = Modifier.width(100.dp)
             ) {
@@ -262,8 +268,10 @@ fun ShiftEditScreen(
                     text = {
                         TextField(
                             value = breakText,
-                            onValueChange = { breakText = it },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)//TODO disable comma and period on keyboard. Only some phones
+                            onValueChange = { newText ->
+                                breakText = newText.filter { it.isDigit() }
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                     },
                     confirmButton = {
@@ -277,6 +285,11 @@ fun ShiftEditScreen(
                             Text("Confirm")
                         }
                     },
+                    dismissButton = {
+                        TextButton(onClick = { openDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
                 )
             }
         }
