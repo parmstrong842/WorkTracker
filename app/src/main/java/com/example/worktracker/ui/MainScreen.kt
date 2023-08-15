@@ -31,7 +31,18 @@ import com.example.worktracker.AppViewModelProvider
 import com.example.worktracker.MyNotification
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalLifecycleComposeApi::class, ExperimentalMaterial3Api::class)
+class SnackbarVisualsImpl(
+    override val message: String,
+) : SnackbarVisuals {
+    override val actionLabel: String
+        get() = ""
+    override val withDismissAction: Boolean
+        get() = true
+    override val duration: SnackbarDuration
+        get() = SnackbarDuration.Short
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLifecycleComposeApi::class)
 @Composable
 fun MainScreen(
     viewShiftsOnClick: () -> Unit = {},
@@ -44,17 +55,6 @@ fun MainScreen(
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         CheckPermissions(context)
-    }
-
-    class SnackbarVisualsImpl(
-        override val message: String,
-    ) : SnackbarVisuals {
-        override val actionLabel: String
-            get() = ""
-        override val withDismissAction: Boolean
-            get() = true
-        override val duration: SnackbarDuration
-            get() = SnackbarDuration.Short
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
