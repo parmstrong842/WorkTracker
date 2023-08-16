@@ -161,6 +161,7 @@ fun TimeZoneSelectionDialog(
 
         AlertDialog(
             onDismissRequest = onDismissRequest,
+            modifier = Modifier.fillMaxSize(),
             text = {
                 val keyboardController = LocalSoftwareKeyboardController.current
 
