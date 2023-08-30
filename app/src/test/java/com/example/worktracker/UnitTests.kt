@@ -13,6 +13,22 @@ import java.util.*
 
 class UnitTests {
 
+    @Test
+    fun getStartOfWeekStringTest() {
+        val calendar = Calendar.getInstance()
+        val dayOfWeek = when (calendar.firstDayOfWeek) {
+            Calendar.SUNDAY -> DayOfWeek.SUNDAY
+            Calendar.MONDAY -> DayOfWeek.MONDAY
+            Calendar.TUESDAY -> DayOfWeek.TUESDAY
+            Calendar.WEDNESDAY -> DayOfWeek.WEDNESDAY
+            Calendar.THURSDAY -> DayOfWeek.THURSDAY
+            Calendar.FRIDAY -> DayOfWeek.FRIDAY
+            Calendar.SATURDAY -> DayOfWeek.SATURDAY
+            else -> throw IllegalArgumentException("Invalid day of the week")
+        }
+        dayOfWeek.name
+    }
+
 
     @Test
     fun testGetStartOfWeek() {

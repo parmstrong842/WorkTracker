@@ -137,8 +137,8 @@ class ShiftViewModel(private val shiftsRepository: ShiftsRepository, sharedPref:
             userZonedDateTime2.plusDays(1)
         }
 
-        val datePattern = DateTimeFormatter.ofPattern("yyyy.MM.dd")
-        val timePattern = DateTimeFormatter.ofPattern("h:mm a")
+        val datePattern = DateTimeFormatter.ofPattern("yyyy.MM.dd", Locale.US)
+        val timePattern = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
 
         val newDate = userZonedDateTime1.format(datePattern)
         val newTimeToken1 = userZonedDateTime1.format(timePattern)
@@ -150,7 +150,7 @@ class ShiftViewModel(private val shiftsRepository: ShiftsRepository, sharedPref:
     }
 
     private fun getZonedDateTime(timestamp: String): ZonedDateTime {
-        val formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd.h:mm a")
+        val formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd.h:mm a", Locale.US)
 
         val localDateTime = LocalDateTime.parse(timestamp, formatter)
 
@@ -177,7 +177,7 @@ class ShiftViewModel(private val shiftsRepository: ShiftsRepository, sharedPref:
         val start = LocalDateTime.parse("${startDate.substring(5)} $startTime", formatter)
         val end = LocalDateTime.parse("${endDate.substring(5)} $endTime", formatter)
         var total = Duration.between(start, end)
-        total = total.minus(Duration.of(breakTotal.toLongOrNull() ?: 0, ChronoUnit.MINUTES))
+        total = total.minus(Duration.of(breakTotal.toLongOrNull() ?: 0, ChronoUnit.MINUTES))//TODO catch exception
 
         var seconds = total.get(ChronoUnit.SECONDS)
         val negative = seconds < 0
@@ -190,23 +190,23 @@ class ShiftViewModel(private val shiftsRepository: ShiftsRepository, sharedPref:
 
     private fun getTimeStamp(pattern: String): String {
         val time = ZonedDateTime.now(selectedTimeZone)
-        return DateTimeFormatter.ofPattern(pattern).format(time)
+        return DateTimeFormatter.ofPattern(pattern, Locale.US).format(time)
     }
 
     private fun getStringFromTime(hour: Int, minute: Int): String {
-        val time = LocalTime.parse("$hour:$minute", DateTimeFormatter.ofPattern("H:m"))
-        return DateTimeFormatter.ofPattern("h:mm a").format(time)
+        val time = LocalTime.parse("$hour:$minute", DateTimeFormatter.ofPattern("H:m", Locale.US))
+        return DateTimeFormatter.ofPattern("h:mm a", Locale.US).format(time)
     }
 
     private fun getDate(year: Int, month: Int, dayOfMonth: Int): String {
         val date = LocalDate.of(year, month+1, dayOfMonth)
-        return DateTimeFormatter.ofPattern("EEE, LLL d").format(date)
+        return DateTimeFormatter.ofPattern("EEE, LLL d", Locale.US).format(date)
     }
 
     private fun getDateForInsert(startYear: String, startDate: String, startTime: String): String {
         val date = LocalDateTime.parse("$startYear $startDate $startTime",
-            DateTimeFormatter.ofPattern("u EEE, LLL d h:mm a"))
-        return DateTimeFormatter.ofPattern("u.MM.dd").format(date)
+            DateTimeFormatter.ofPattern("u EEE, LLL d h:mm a", Locale.US))
+        return DateTimeFormatter.ofPattern("u.MM.dd", Locale.US).format(date)
     }
 
     fun getDatePickerStart(): Triple<Int, Int, Int> {

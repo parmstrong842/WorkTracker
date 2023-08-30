@@ -15,6 +15,6 @@ class AppDataContainer(private val context: Context) : AppContainer {
 
     override val sharedPreferencesRepository: SharedPreferencesRepository by lazy {
         val sharedPreferences = context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
-        SharedPreferencesRepository(sharedPreferences)
+        SharedPreferencesRepositoryImpl(sharedPreferences)
     }
 }

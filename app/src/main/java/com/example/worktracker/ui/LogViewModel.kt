@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import java.time.*
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
+import java.util.Locale
 
 data class LogUiState(
     val itemList: List<Shift> = listOf(),
@@ -62,8 +63,8 @@ class LogViewModel(
                 userZonedDateTime2.plusDays(1)
             }
 
-            val datePattern = DateTimeFormatter.ofPattern("yyyy.MM.dd")
-            val timePattern = DateTimeFormatter.ofPattern("h:mm a")
+            val datePattern = DateTimeFormatter.ofPattern("yyyy.MM.dd", Locale.US)
+            val timePattern = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
 
             val newDate = userZonedDateTime1.format(datePattern)
             val newTimeToken1 = userZonedDateTime1.format(timePattern)
@@ -77,7 +78,7 @@ class LogViewModel(
     }
 
     private fun getZonedDateTime(timestamp: String): ZonedDateTime {
-        val formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd.h:mm a")
+        val formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd.h:mm a", Locale.US)
 
         val localDateTime = LocalDateTime.parse(timestamp, formatter)
 
@@ -227,7 +228,7 @@ class LogViewModel(
     private fun getShiftsForDatesBetween(shiftList: List<Shift>, start: LocalDate, end: LocalDate): List<Shift> {
         val list = mutableListOf<Shift>()
         shiftList.forEach {
-            val shiftDate = LocalDate.parse(it.date, DateTimeFormatter.ofPattern("u.MM.dd"))
+            val shiftDate = LocalDate.parse(it.date, DateTimeFormatter.ofPattern("u.MM.dd", Locale.US))
             if (shiftDate.isAfter(start) || shiftDate.isEqual(start)) {
                 if (shiftDate.isBefore(end)) {
                     list.add(it)

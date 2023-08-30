@@ -23,6 +23,7 @@ import com.example.worktracker.AppViewModelProvider
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 object ShiftEditDestination {
     const val route = "shift_edit"
@@ -30,7 +31,6 @@ object ShiftEditDestination {
     const val routeWithArgs = "$route/{$shiftIdArg}"
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun ShiftEditScreen(
@@ -297,7 +297,7 @@ fun ShiftEditScreen(
 }
 
 private fun getHourAndMinute(str: String): Pair<Int, Int> {
-    val formatter = DateTimeFormatter.ofPattern("h:mm a")
+    val formatter = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
     val time = LocalTime.parse(str, formatter)
     return Pair(time.hour, time.minute)
 }

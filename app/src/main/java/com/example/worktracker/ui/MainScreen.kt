@@ -24,7 +24,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.worktracker.AppViewModelProvider
@@ -42,7 +41,7 @@ class SnackbarVisualsImpl(
         get() = SnackbarDuration.Short
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLifecycleComposeApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     viewShiftsOnClick: () -> Unit = {},
@@ -155,7 +154,9 @@ fun MainScreen(
                                 text = uiState.breakStartTime
                             )
                         }
-                        val padding by animateDpAsState(if (uiState.onBreak) 0.dp else 35.dp)
+                        val padding by animateDpAsState(if (uiState.onBreak) 0.dp else 35.dp,
+                            label = ""
+                        )
                         IconButton(
                             onClick = {
                                 if (!uiState.onBreak) {

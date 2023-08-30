@@ -25,9 +25,9 @@ import com.example.worktracker.AppViewModelProvider
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShiftScreen(
     topBarTitle: String,
@@ -296,7 +296,7 @@ fun ShiftTopAppBar(
 }
 
 private fun getHourAndMinute(str: String): Pair<Int, Int> {
-    val formatter = DateTimeFormatter.ofPattern("h:mm a")
+    val formatter = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
     val time = LocalTime.parse(str, formatter)
     return Pair(time.hour, time.minute)
 }

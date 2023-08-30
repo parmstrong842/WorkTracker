@@ -7,10 +7,12 @@ import com.example.worktracker.Constants.START_OF_WEEK_KEY
 import com.example.worktracker.Constants.TIME_ZONE_KEY
 import com.example.worktracker.data.AppContainer
 import com.example.worktracker.data.AppDataContainer
-import java.text.DateFormatSymbols
+import java.time.DayOfWeek
 import java.util.*
 
 //TODO use System.currentTimeMillis()
+//TODO show clocked in time in notification
+//TODO export shifts
 const val TAG = "WorkTrackerTag"
 class WorkTrackerApplication : Application() {
     /**
@@ -36,8 +38,16 @@ class WorkTrackerApplication : Application() {
 
     private fun getStartOfWeekString(): String {
         val calendar = Calendar.getInstance()
-        val firstDayOfWeek = calendar.firstDayOfWeek
-        val dateFormatSymbols = DateFormatSymbols.getInstance()
-        return dateFormatSymbols.weekdays[firstDayOfWeek].uppercase()
+        val dayOfWeek = when (calendar.firstDayOfWeek) {
+            Calendar.SUNDAY -> DayOfWeek.SUNDAY
+            Calendar.MONDAY -> DayOfWeek.MONDAY
+            Calendar.TUESDAY -> DayOfWeek.TUESDAY
+            Calendar.WEDNESDAY -> DayOfWeek.WEDNESDAY
+            Calendar.THURSDAY -> DayOfWeek.THURSDAY
+            Calendar.FRIDAY -> DayOfWeek.FRIDAY
+            Calendar.SATURDAY -> DayOfWeek.SATURDAY
+            else -> throw IllegalArgumentException("Invalid day of the week")
+        }
+        return dayOfWeek.name
     }
 }

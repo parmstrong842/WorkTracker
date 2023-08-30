@@ -24,8 +24,8 @@ import com.example.worktracker.AppViewModelProvider
 import com.example.worktracker.data.Shift
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogScreen(
     navigateBack: () -> Unit,
@@ -194,8 +194,8 @@ fun ShiftItem(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.weight(2f)
             ) {
-                val date = LocalDate.parse(item.date, DateTimeFormatter.ofPattern("yyyy.MM.dd"))
-                Text(DateTimeFormatter.ofPattern("EEE, LLL d").format(date))
+                val date = LocalDate.parse(item.date, DateTimeFormatter.ofPattern("yyyy.MM.dd", Locale.US))
+                Text(DateTimeFormatter.ofPattern("EEE, LLL d", Locale.US).format(date))
                 Text(item.shiftSpan)
             }
             Text(
@@ -252,7 +252,7 @@ fun getTotal(list: List<Shift>): String {
     val minutes = seconds / (60) % 60
     val hours = seconds / (60 * 60)
 
-    return String.format("%d:%02d", hours, minutes)//TODO might have issue with negatives
+    return String.format("%d:%02d", hours, minutes)//TODO might have issue with negatives -6:-57
 }
 
 @Preview(widthDp = 300)

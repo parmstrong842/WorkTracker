@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
         checkIfClockedIn()
 
         setContent {
-            WorkTrackerTheme(dynamicColor = false) {
+            WorkTrackerTheme {
                 WorkNavGraph()
             }
         }

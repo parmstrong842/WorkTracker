@@ -130,7 +130,7 @@ class ShiftEditViewModel(
         val start = LocalDateTime.parse("${startDate.substring(5)} $startTime", formatter)
         val end = LocalDateTime.parse("${endDate.substring(5)} $endTime", formatter)
         var total = Duration.between(start, end)
-        total = total.minus(Duration.of(breakTotal.toLongOrNull() ?: 0, ChronoUnit.MINUTES))
+        total = total.minus(Duration.of(breakTotal.toLongOrNull() ?: 0, ChronoUnit.MINUTES))//TODO catch exception
 
         var seconds = total.get(ChronoUnit.SECONDS)
         val negative = seconds < 0
@@ -142,38 +142,38 @@ class ShiftEditViewModel(
     }
 
     private fun getStringFromTime(hour: Int, minute: Int): String {
-        val time = LocalTime.parse("$hour:$minute", DateTimeFormatter.ofPattern("H:m"))
-        return DateTimeFormatter.ofPattern("h:mm a").format(time)
+        val time = LocalTime.parse("$hour:$minute", DateTimeFormatter.ofPattern("H:m", Locale.US))
+        return DateTimeFormatter.ofPattern("h:mm a", Locale.US).format(time)
     }
 
     private fun getDate(year: Int, month: Int, dayOfMonth: Int): String {
         val date = LocalDate.of(year, month+1, dayOfMonth)
-        return DateTimeFormatter.ofPattern("EEE, LLL d").format(date)
+        return DateTimeFormatter.ofPattern("EEE, LLL d", Locale.US).format(date)
     }
 
     private fun getDateForInsert(startYear: String, startDate: String, startTime: String): String {
         val date = LocalDateTime.parse("$startYear $startDate $startTime",
-            DateTimeFormatter.ofPattern("u EEE, LLL d h:mm a"))
-        return DateTimeFormatter.ofPattern("u.MM.dd").format(date)
+            DateTimeFormatter.ofPattern("u EEE, LLL d h:mm a", Locale.US))
+        return DateTimeFormatter.ofPattern("u.MM.dd", Locale.US).format(date)
     }
 
 
     private fun buildShiftUiState(shift: Shift): ShiftUiState {
         convertShiftToDifferentTimeZone(shift, ZoneId.of("UTC"), selectedTimeZone)
 
-        val date = LocalDate.parse(shift.date, DateTimeFormatter.ofPattern("u.MM.dd"))
-        val startDate = DateTimeFormatter.ofPattern("EEE, LLL d").format(date)
+        val date = LocalDate.parse(shift.date, DateTimeFormatter.ofPattern("u.MM.dd", Locale.US))
+        val startDate = DateTimeFormatter.ofPattern("EEE, LLL d", Locale.US).format(date)
         val times = shift.shiftSpan.split(" - ")
         val startTime = times[0]
         val endTime = times[1]
         val breakTotal = getBreakInMinutes(shift.breakTotal)
         val total = shift.shiftTotal
 
-        var dateTime = LocalDateTime.parse("${shift.date} $startTime", DateTimeFormatter.ofPattern("u.MM.dd h:mm a"))
+        var dateTime = LocalDateTime.parse("${shift.date} $startTime", DateTimeFormatter.ofPattern("u.MM.dd h:mm a", Locale.US))
         val tokens = shift.shiftTotal.split(':')
         dateTime = dateTime.plusHours(tokens[0].toLong())
         dateTime = dateTime.plusMinutes(tokens[1].toLong())
-        val endDate = DateTimeFormatter.ofPattern("EEE, LLL d").format(dateTime)
+        val endDate = DateTimeFormatter.ofPattern("EEE, LLL d", Locale.US).format(dateTime)
 
         return ShiftUiState(
             startDate = startDate,
@@ -209,8 +209,8 @@ class ShiftEditViewModel(
             zonedDateTime2.plusDays(1)
         }
 
-        val datePattern = DateTimeFormatter.ofPattern("yyyy.MM.dd")
-        val timePattern = DateTimeFormatter.ofPattern("h:mm a")
+        val datePattern = DateTimeFormatter.ofPattern("yyyy.MM.dd", Locale.US)
+        val timePattern = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
 
         val newDate = zonedDateTime1.format(datePattern)
         val newTimeToken1 = zonedDateTime1.format(timePattern)
@@ -222,7 +222,7 @@ class ShiftEditViewModel(
     }
 
     private fun getZonedDateTime(timestamp: String, startZone: ZoneId, endZone: ZoneId): ZonedDateTime {
-        val formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd.h:mm a")
+        val formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd.h:mm a", Locale.US)
         val localDateTime = LocalDateTime.parse(timestamp, formatter)
         val zonedDateTime = ZonedDateTime.of(localDateTime, startZone)
         return zonedDateTime.withZoneSameInstant(endZone)

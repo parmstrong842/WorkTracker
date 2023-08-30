@@ -41,7 +41,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -368,7 +367,6 @@ private fun ABCBar(
 }
 
 @Composable
-@OptIn(ExperimentalTextApi::class)
 private fun SelectedLetterDisplay(
     selectedLetter: String?,
     touchPositionY: Float?,
