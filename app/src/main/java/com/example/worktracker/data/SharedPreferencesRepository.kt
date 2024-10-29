@@ -10,4 +10,6 @@ interface SharedPreferencesRepository {
     fun putBoolean(key: String, value: Boolean)
 
     fun remove(key: String)
+
+    fun contains(key: String): Boolean
 }

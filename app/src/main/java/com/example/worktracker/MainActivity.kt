@@ -17,25 +17,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        checkIfClockedIn()
-
         setContent {
             WorkTrackerTheme {
                 WorkNavGraph()
-            }
-        }
-    }
-
-    private fun checkIfClockedIn() {
-        val sharedPref: SharedPreferences = application.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
-        val clockedIn = sharedPref.getBoolean(CLOCKED_IN_KEY, false)
-        val onBreak = sharedPref.getBoolean(ON_BREAK_KEY, false)
-
-        if (clockedIn) {
-            if(onBreak) {
-                MyNotification().fireNotification(application, "On Break", "You are on break")
-            } else {
-                MyNotification().fireNotification(application, "Clocked In", "You are clocked in")
             }
         }
     }

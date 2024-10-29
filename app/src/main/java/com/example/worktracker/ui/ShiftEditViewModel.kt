@@ -32,7 +32,7 @@ class ShiftEditViewModel(
     private val selectedTimeZone: ZoneId
 
     init {
-        val timeZoneString = sharedPreferencesRepository.getString(Constants.TIME_ZONE_KEY, "UTC")
+        val timeZoneString = sharedPreferencesRepository.getString(Constants.TIME_ZONE_KEY, "Etc/UTC")
         selectedTimeZone = ZoneId.of(timeZoneString)
 
         _uiState = MutableStateFlow(ShiftUiState("---", "---", "---", "---", "---", "---"))
@@ -130,7 +130,7 @@ class ShiftEditViewModel(
         val start = LocalDateTime.parse("${startDate.substring(5)} $startTime", formatter)
         val end = LocalDateTime.parse("${endDate.substring(5)} $endTime", formatter)
         var total = Duration.between(start, end)
-        total = total.minus(Duration.of(breakTotal.toLongOrNull() ?: 0, ChronoUnit.MINUTES))//TODO catch exception
+        total = total.minus(Duration.of(breakTotal.toLongOrNull() ?: 0, ChronoUnit.MINUTES))
 
         var seconds = total.get(ChronoUnit.SECONDS)
         val negative = seconds < 0

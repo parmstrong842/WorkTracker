@@ -27,7 +27,7 @@ class SettingsViewModel(private val sharedPref: SharedPreferencesRepository) : V
     var columnHeight = 0f
 
     init {
-        val timeZoneId = sharedPref.getString(TIME_ZONE_KEY, "UTC")
+        val timeZoneId = sharedPref.getString(TIME_ZONE_KEY, "Etc/UTC")
         val dayOfWeekString = sharedPref.getString(START_OF_WEEK_KEY, "SUNDAY").toProperCase()
 
         _uiState = MutableStateFlow(

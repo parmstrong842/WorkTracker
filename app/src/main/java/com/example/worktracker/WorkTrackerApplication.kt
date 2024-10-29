@@ -1,8 +1,9 @@
 package com.example.worktracker
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
-import com.example.worktracker.Constants.PREFS_FILE_NAME
 import com.example.worktracker.Constants.START_OF_WEEK_KEY
 import com.example.worktracker.Constants.TIME_ZONE_KEY
 import com.example.worktracker.data.AppContainer
@@ -10,9 +11,13 @@ import com.example.worktracker.data.AppDataContainer
 import java.time.DayOfWeek
 import java.util.*
 
-//TODO use System.currentTimeMillis()
-//TODO show clocked in time in notification
-//TODO export shifts
+//TODO if shift is longer then 24h it messes up
+//TODO find out why app is accessing network activity
+//TODO import csv file
+//TODO make notification not dismissible
+//TODO add guard rails for clocking out and ending break
+//TODO update dark theme animation
+
 const val TAG = "WorkTrackerTag"
 class WorkTrackerApplication : Application() {
     /**
@@ -22,17 +27,20 @@ class WorkTrackerApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppDataContainer(this)
+        val sharedPrefs = container.sharedPreferencesRepository
+        createNotificationChannel(this)
 
-        val sharedPreferences = getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
+        NotificationHandler.initialize(sharedPrefs)
+        Utils.initialize(sharedPrefs)
 
-        if (!sharedPreferences.contains(TIME_ZONE_KEY)) {
+        if (!sharedPrefs.contains(TIME_ZONE_KEY)) {
             val userTimeZone = TimeZone.getDefault().id
-            sharedPreferences.edit().putString(TIME_ZONE_KEY, userTimeZone).apply()
+            sharedPrefs.putString(TIME_ZONE_KEY, userTimeZone)
         }
 
-        if (!sharedPreferences.contains(START_OF_WEEK_KEY)) {
+        if (!sharedPrefs.contains(START_OF_WEEK_KEY)) {
             val firstDayOfWeek = getStartOfWeekString()
-            sharedPreferences.edit().putString(START_OF_WEEK_KEY, firstDayOfWeek).apply()
+            sharedPrefs.putString(START_OF_WEEK_KEY, firstDayOfWeek)
         }
     }
 
@@ -46,8 +54,19 @@ class WorkTrackerApplication : Application() {
             Calendar.THURSDAY -> DayOfWeek.THURSDAY
             Calendar.FRIDAY -> DayOfWeek.FRIDAY
             Calendar.SATURDAY -> DayOfWeek.SATURDAY
-            else -> throw IllegalArgumentException("Invalid day of the week")
+            else -> throw IllegalArgumentException(getString(R.string.invalid_day_of_the_week))
         }
         return dayOfWeek.name
+    }
+
+    private fun createNotificationChannel(context: Context) {
+        val channelId = getString(R.string.channel_id)
+        val name = getString(R.string.worktracker_notification_name)
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val channel = NotificationChannel(channelId, name, NotificationManager.IMPORTANCE_LOW).apply {
+            setShowBadge(false)
+        }
+        notificationManager.createNotificationChannel(channel)
     }
 }

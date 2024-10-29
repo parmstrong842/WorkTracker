@@ -26,7 +26,11 @@ data class ShiftUiState(
     val total: String,
 )
 
-class ShiftViewModel(private val shiftsRepository: ShiftsRepository, sharedPref: SharedPreferencesRepository): ViewModel() {
+class ShiftViewModel(
+    private val shiftsRepository: ShiftsRepository,
+    sharedPref: SharedPreferencesRepository,
+    private var clock: Clock? = null
+): ViewModel() {
 
     private val _uiState: MutableStateFlow<ShiftUiState>
     val uiState: StateFlow<ShiftUiState>
@@ -35,9 +39,11 @@ class ShiftViewModel(private val shiftsRepository: ShiftsRepository, sharedPref:
     private val selectedTimeZone: ZoneId
 
     init{
-        val timeZoneString = sharedPref.getString(Constants.TIME_ZONE_KEY, "UTC")
+        val timeZoneString = sharedPref.getString(Constants.TIME_ZONE_KEY, "Etc/UTC")
         selectedTimeZone = ZoneId.of(timeZoneString)
-
+        if (clock == null) {
+            clock = Clock.system(selectedTimeZone)
+        }
         startYear = getTimeStamp("u")
 
         val date = getTimeStamp("EEE, LLL d")
@@ -177,7 +183,7 @@ class ShiftViewModel(private val shiftsRepository: ShiftsRepository, sharedPref:
         val start = LocalDateTime.parse("${startDate.substring(5)} $startTime", formatter)
         val end = LocalDateTime.parse("${endDate.substring(5)} $endTime", formatter)
         var total = Duration.between(start, end)
-        total = total.minus(Duration.of(breakTotal.toLongOrNull() ?: 0, ChronoUnit.MINUTES))//TODO catch exception
+        total = total.minus(Duration.of(breakTotal.toLongOrNull() ?: 0, ChronoUnit.MINUTES))
 
         var seconds = total.get(ChronoUnit.SECONDS)
         val negative = seconds < 0
@@ -189,7 +195,7 @@ class ShiftViewModel(private val shiftsRepository: ShiftsRepository, sharedPref:
     }
 
     private fun getTimeStamp(pattern: String): String {
-        val time = ZonedDateTime.now(selectedTimeZone)
+        val time = ZonedDateTime.now(clock)
         return DateTimeFormatter.ofPattern(pattern, Locale.US).format(time)
     }
 

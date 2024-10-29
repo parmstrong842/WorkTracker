@@ -1,12 +1,16 @@
 package com.example.worktracker.data
 
 import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ShiftDao {
 
     @Query("SELECT * from shifts ORDER BY date ASC")
     suspend fun getAllItems(): List<Shift>
+
+    @Query("SELECT * from shifts ORDER BY date ASC")
+    fun getAllItemsFlow(): Flow<List<Shift>>
 
     @Query("SELECT * from shifts WHERE id = :id")
     suspend fun getItem(id: Int): Shift

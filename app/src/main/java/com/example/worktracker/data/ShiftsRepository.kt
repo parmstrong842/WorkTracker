@@ -1,10 +1,14 @@
 package com.example.worktracker.data
 
+import kotlinx.coroutines.flow.Flow
+
 interface ShiftsRepository {
     /**
      * Retrieve all the items from the the given data source.
      */
-    suspend fun getAllItemsStream(): List<Shift>
+    suspend fun getAllItems(): List<Shift>
+
+    fun getAllItemsFlow(): Flow<List<Shift>>
 
     /**
      * Retrieve an item from the given data source that matches with the [id].

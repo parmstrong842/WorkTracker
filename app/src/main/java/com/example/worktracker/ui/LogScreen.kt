@@ -14,6 +14,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -21,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.worktracker.AppViewModelProvider
+import com.example.worktracker.R
 import com.example.worktracker.data.Shift
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -34,14 +37,19 @@ fun LogScreen(
     viewModel: LogViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val titles = listOf("Week", "Month", "Year", "All")
+    val titles = listOf(
+        stringResource(R.string.week),
+        stringResource(R.string.month),
+        stringResource(R.string.year),
+        stringResource(R.string.all)
+    )
 
     val total = getTotal(uiState.itemList)
 
     Scaffold(
         topBar = {
             LogTopAppBar(
-                title = "Shifts",
+                title = stringResource(R.string.shifts),
                 navigateBack = navigateBack,
                 createShift = navigateToShift
             )
@@ -54,7 +62,7 @@ fun LogScreen(
                     modifier = Modifier.height(50.dp)
                 ) {
                     Text(
-                        text = "Total: ",
+                        text = stringResource(R.string.total_item),
                         textAlign = TextAlign.Right,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(2f),
@@ -77,14 +85,19 @@ fun LogScreen(
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min)
                     ) {
                         Button(
                             onClick = { viewModel.minusDate() },
                             modifier =  Modifier.fillMaxHeight(),
                             shape = RoundedCornerShape(topStart = 25.dp, bottomStart = 25.dp),
                         ) {
-                            Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = stringResource(R.string.previous)
+                            )
                         }
                         Column(
                             verticalArrangement = Arrangement.Center,
@@ -93,7 +106,7 @@ fun LogScreen(
                         ) {
                             if (uiState.tabState == 3) {
                                 Text(
-                                    text = "All Shifts",
+                                    text = stringResource(R.string.all_shifts),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 18.sp
                                 )
@@ -117,7 +130,7 @@ fun LogScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ArrowForward,
-                                contentDescription = null
+                                contentDescription = stringResource(R.string.next)
                             )
                         }
                     }
@@ -158,17 +171,17 @@ fun ShiftHeader() {
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(
-            text = "Date",
+            text = stringResource(R.string.date_column),
             textAlign = TextAlign.Center,
             modifier = Modifier.weight(2f)
         )
         Text(
-            text = "Break",
+            text = stringResource(R.string.break_column),
             textAlign = TextAlign.Center,
             modifier = Modifier.weight(1f)
         )
         Text(
-            text = "Time",
+            text = stringResource(R.string.time_column),
             textAlign = TextAlign.Center,
             modifier = Modifier.weight(1f)
         )
@@ -192,7 +205,9 @@ fun ShiftItem(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(2f)
+                modifier = Modifier
+                    .weight(2f)
+                    .testTag("${item.id}")
             ) {
                 val date = LocalDate.parse(item.date, DateTimeFormatter.ofPattern("yyyy.MM.dd", Locale.US))
                 Text(DateTimeFormatter.ofPattern("EEE, LLL d", Locale.US).format(date))
@@ -201,12 +216,16 @@ fun ShiftItem(
             Text(
                 text = item.breakTotal,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("break")
             )
             Text(
                 text = item.shiftTotal,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("total")
             )
         }
     }
@@ -227,7 +246,7 @@ fun LogTopAppBar(
             IconButton(onClick = navigateBack) {
                 Icon(
                     imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = stringResource(R.string.back)
                 )
             }
         },
@@ -235,7 +254,7 @@ fun LogTopAppBar(
             IconButton(onClick = createShift) {
                 Icon(
                     imageVector = Icons.Rounded.Add,
-                    contentDescription = "Create new shift"
+                    contentDescription = stringResource(R.string.create_new_shift)
                 )
             }
         }

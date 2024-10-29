@@ -2,11 +2,11 @@ package com.example.worktracker.ui
 
 import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
@@ -20,15 +20,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.worktracker.AppViewModelProvider
-import com.example.worktracker.MyNotification
+import com.example.worktracker.Constants
+import com.example.worktracker.NotificationHandler
+import com.example.worktracker.R
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SnackbarVisualsImpl(
     override val message: String,
@@ -56,8 +61,29 @@ fun MainScreen(
         CheckPermissions(context)
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val createFileLauncher = rememberLauncherForActivityResult(CreateDocument("text/csv")) { uri ->
+        uri?.let {
+            scope.launch {
+                val shiftData = viewModel.fetchShiftData()
+                val csvHeader = "id,date,shiftSpan,breakTotal,shiftTotal\n"
+                val csvContent = StringBuilder(csvHeader)
+
+                for (shift in shiftData) {
+                    csvContent.append("${shift.id},${shift.date},${shift.shiftSpan},${shift.breakTotal},${shift.shiftTotal}\n")
+                }
+                context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                    outputStream.write(csvContent.toString().toByteArray())
+                }
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context,
+                        context.getString(R.string.file_successfully_saved), Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    val snackbarHostState = remember { SnackbarHostState() }
     val showMenu = remember { mutableStateOf(false) }
     Scaffold(snackbarHost = {
         SnackbarHost(snackbarHostState) { data ->
@@ -65,7 +91,10 @@ fun MainScreen(
                 modifier = Modifier.padding(horizontal = 80.dp, vertical = 10.dp),
                 dismissAction = {
                     IconButton(onClick = { data.dismiss() }) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "Dismiss snackbar")
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.dismiss_snackbar)
+                        )
                     }
                 }
             ) {
@@ -78,13 +107,13 @@ fun MainScreen(
     },
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Work Tracker") },
+                title = { Text(stringResource(R.string.main_screen_top_bar)) },
                 actions = {
                     Box {
                         IconButton(onClick = { showMenu.value = true }) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Settings"
+                                contentDescription = stringResource(R.string.settings)
                             )
                         }
                         DropdownMenu(
@@ -92,10 +121,17 @@ fun MainScreen(
                             onDismissRequest = { showMenu.value = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text(text = "Settings") },
+                                text = { Text(text = stringResource(R.string.settings)) },
                                 onClick = {
                                     showMenu.value = false
                                     navigateToSettings()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.export_csv)) },
+                                onClick = {
+                                    showMenu.value = false
+                                    createFileLauncher.launch("shifts.csv")
                                 }
                             )
                         }
@@ -118,7 +154,8 @@ fun MainScreen(
                     Text(
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
-                        text = uiState.counter
+                        text = uiState.counter,
+                        modifier = Modifier.testTag("counter")
                     )
                     Spacer(modifier = Modifier.padding(vertical = 30.dp))
                     Row(
@@ -128,7 +165,7 @@ fun MainScreen(
                     ) {
                         Text(
                             fontSize = 20.sp,
-                            text = "Shift Start "
+                            text = stringResource(R.string.shift_start)
                         )
                         Text(
                             fontSize = 20.sp,
@@ -144,7 +181,7 @@ fun MainScreen(
                     ) {
                         Text(
                             fontSize = 20.sp,
-                            text = "Break Start",
+                            text = stringResource(R.string.break_start),
                             modifier = Modifier.weight(1f)
                         )
                         AnimatedVisibility(visible = uiState.onBreak) {
@@ -159,26 +196,19 @@ fun MainScreen(
                         )
                         IconButton(
                             onClick = {
-                                if (!uiState.onBreak) {
-                                    MyNotification().fireNotification(
-                                        context,
-                                        "On Break",
-                                        "You are on break"
-                                    )
+                                val onBreak = uiState.onBreak
+                                viewModel.updateOnBreak()
+                                if (!onBreak) {
+                                    NotificationHandler.fireBreakNotification(context)
                                 } else {
-                                    MyNotification().fireNotification(
-                                        context,
-                                        "Clocked In",
-                                        "You are clocked in"
-                                    )
+                                    NotificationHandler.fireNotification(context)
                                 }
-
-                                viewModel.updateOnBreak() },
+                            },
                             modifier = Modifier.padding(end = padding)
                         ) {
                             Icon(
                                 imageVector = if (uiState.onBreak) Icons.Default.Close else Icons.Default.PlayArrow,
-                                contentDescription = "Start Break"
+                                contentDescription = stringResource(R.string.break_start)
                             )
                         }
                     }
@@ -190,12 +220,13 @@ fun MainScreen(
                     ) {
                         Text(
                             fontSize = 20.sp,
-                            text = "Break Total"
+                            text = stringResource(R.string.break_total)
                         )
                         Text(
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            text = uiState.breakCounter
+                            text = uiState.breakCounter,
+                            modifier = Modifier.testTag("breakCounter")
                         )
                     }
                 }
@@ -206,26 +237,25 @@ fun MainScreen(
             Spacer(Modifier.padding(p))
             Button(
                 onClick = {
-                    if (!uiState.clockedIn) {
-                        MyNotification().fireNotification(
-                            context,
-                            "Clocked In",
-                            "You are clocked in"
-                        )
+                    val clockedIn = uiState.clockedIn
+                    viewModel.updateClockedIn()
+                    if (!clockedIn) {
+                        NotificationHandler.startRecurringNotification(context)
                     } else {
-                        MyNotification().cancelNotification(context)
+                        NotificationHandler.endRecurringNotification(context)
                         scope.launch {
                             snackbarHostState.showSnackbar(
-                                SnackbarVisualsImpl("Shift Saved")
+                                SnackbarVisualsImpl(context.getString(R.string.shift_saved))
                             )
                         }
                     }
-                    viewModel.updateClockedIn()
                 },
                 modifier = Modifier.width(140.dp)
             ) {
                 Text(
-                    text = if (!uiState.clockedIn) "Clock In" else "Clock Out",
+                    text = if (!uiState.clockedIn)
+                        stringResource(R.string.clock_in)
+                    else stringResource(R.string.clock_out),
                     fontSize = 15.sp
                 )
             }
@@ -235,7 +265,7 @@ fun MainScreen(
                 modifier = Modifier.width(140.dp)
             ) {
                 Text(
-                    text = "View Shifts",
+                    text = stringResource(R.string.view_shifts),
                     fontSize = 15.sp
                 )
             }
@@ -247,31 +277,16 @@ fun MainScreen(
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun CheckPermissions(context: Context) {
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            // Permission Accepted: Do something
-            Log.d("MainContent","PERMISSION GRANTED")
-
-        } else {
-            // Permission Denied: Do something
-            Log.d("MainContent","PERMISSION DENIED")
+    val sharedPref = context.getSharedPreferences(Constants.PREFS_FILE_NAME, Context.MODE_PRIVATE)
+    if (!sharedPref.getBoolean(Constants.CHECKED_FOR_PERMISSIONS_KEY, false)) {
+        val launcher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) {
+            sharedPref.edit().putBoolean(Constants.CHECKED_FOR_PERMISSIONS_KEY, true).apply()
         }
-    }
 
-    when (PackageManager.PERMISSION_GRANTED) {
-        ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.POST_NOTIFICATIONS
-        ) -> {
-            // Some works that require permission
-            //Log.d("MainContent","has POST_NOTIFICATION permission")
-        }
-        else -> {
-            SideEffect {
-                launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
+        SideEffect {
+            launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 }

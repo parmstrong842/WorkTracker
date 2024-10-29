@@ -40,6 +40,8 @@ import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -49,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.worktracker.AppViewModelProvider
+import com.example.worktracker.R
 import com.example.worktracker.TimeZoneInfo.letterToIndexMap
 import com.example.worktracker.TimeZoneInfo.timeZoneList
 import com.example.worktracker.ui.theme.LocalIsDarkMode
@@ -70,12 +73,12 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "Settings") },
+                title = { Text(text = stringResource(R.string.settings)) },
                 navigationIcon = {
                     IconButton(onClick = navigateBack) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.back)
                         )
                     }
                 }
@@ -123,7 +126,7 @@ fun TimeZoneSettings(
     val showDialog = remember { mutableStateOf(false) }
 
     SettingsItem(
-        settingName = "Time Zone",
+        settingName = stringResource(R.string.time_zone_setting),
         selectedItem = selectedItem,
         onClick = { showDialog.value = true },
     )
@@ -160,7 +163,9 @@ fun TimeZoneSelectionDialog(
 
         AlertDialog(
             onDismissRequest = onDismissRequest,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("TimeZoneSelectionDialog"),
             text = {
                 val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -203,7 +208,6 @@ fun TimeZoneSelectionDialog(
 }
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 private fun SearchBar(
     onDismissRequest: () -> Unit,
     searchQuery: MutableState<String>
@@ -212,19 +216,19 @@ private fun SearchBar(
         IconButton(onClick = onDismissRequest) {
             Icon(
                 imageVector = Icons.Filled.ArrowBack,
-                contentDescription = "Back"
+                contentDescription = stringResource(R.string.time_zone_select_back)
             )
         }
         OutlinedTextField(
             value = searchQuery.value,
             onValueChange = { searchQuery.value = it },
-            placeholder = { Text("Search") },
+            placeholder = { Text(stringResource(R.string.search)) },
             trailingIcon = {
                 if (searchQuery.value.isNotEmpty()) {
                     IconButton(onClick = { searchQuery.value = "" }) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "clear text"
+                            contentDescription = stringResource(R.string.clear_text)
                         )
                     }
                 }
@@ -321,13 +325,13 @@ private fun ABCBar(
             .background(sideBarColor)
             .onGloballyPositioned { coordinates ->
                 setColumnHeight(coordinates.size.height.toFloat())
-
             }
             .pointerInteropFilter { event ->
                 when (event.action) {
                     MotionEvent.ACTION_UP -> {
                         setTouchPositionY(null)
                     }
+
                     else -> {
                         setTouchPositionY(event.y)
                     }
@@ -346,7 +350,8 @@ private fun ABCBar(
                         cornerRadius = CornerRadius(10.dp.toPx())
                     )
                 }
-            },
+            }
+            .testTag("ABCBar"),
         verticalArrangement = Arrangement.SpaceEvenly
     ) {
         val dotColor = if (LocalIsDarkMode.current) Color.LightGray else Color.Black
@@ -412,7 +417,7 @@ private fun ScrollToTopButton(
 ) {
     val isScrolled by remember {
         derivedStateOf {
-            listState.firstVisibleItemScrollOffset // It doesn't work if this isn't here. I have know idea why
+            listState.firstVisibleItemScrollOffset // It doesn't work if this isn't here.
             listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
         }
     }
@@ -447,7 +452,7 @@ private fun ScrollToTopButton(
             ) {
                 Icon(
                     imageVector = Icons.Default.VerticalAlignTop,
-                    contentDescription = "go to top"
+                    contentDescription = stringResource(R.string.go_to_top)
                 )
             }
         }
@@ -462,7 +467,7 @@ fun WeekSettings(
     val showDialog = remember { mutableStateOf(false) }
 
     SettingsItem(
-        settingName = "Start of Week",
+        settingName = stringResource(R.string.start_of_week_setting),
         selectedItem = selectedItem,
         onClick = { showDialog.value = true },
     )
@@ -483,20 +488,20 @@ fun WeekSelectionDialog(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = onDismissRequest,
-            title = { Text(text = "Select Start of Week") },
+            title = { Text(text = stringResource(R.string.select_start_of_week)) },
             text = {
                 Column {
-                    WeekItem(day = "Saturday", onDismissRequest, onStartOfWeekSelected)
+                    WeekItem(day = stringResource(R.string.saturday), onDismissRequest, onStartOfWeekSelected)
                     Divider(color = Color.Black)
-                    WeekItem(day = "Sunday", onDismissRequest, onStartOfWeekSelected)
+                    WeekItem(day = stringResource(R.string.sunday), onDismissRequest, onStartOfWeekSelected)
                     Divider(color = Color.Black)
-                    WeekItem(day = "Monday", onDismissRequest, onStartOfWeekSelected)
+                    WeekItem(day = stringResource(R.string.monday), onDismissRequest, onStartOfWeekSelected)
                 }
             },
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = onDismissRequest) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             },
         )

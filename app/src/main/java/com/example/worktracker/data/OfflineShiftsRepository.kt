@@ -1,7 +1,11 @@
 package com.example.worktracker.data
 
+import kotlinx.coroutines.flow.Flow
+
 class OfflineShiftsRepository(private val shiftDao: ShiftDao) : ShiftsRepository {
-    override suspend fun getAllItemsStream(): List<Shift> = shiftDao.getAllItems()
+    override suspend fun getAllItems(): List<Shift> = shiftDao.getAllItems()
+
+    override fun getAllItemsFlow(): Flow<List<Shift>> = shiftDao.getAllItemsFlow()
 
     override suspend fun getItemStream(id: Int): Shift = shiftDao.getItem(id)
 

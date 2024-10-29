@@ -14,12 +14,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.worktracker.AppViewModelProvider
+import com.example.worktracker.R
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -41,8 +44,10 @@ fun ShiftEditScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
-    var openDialog by rememberSaveable { mutableStateOf(false) }
+    var openBreakDialog by rememberSaveable { mutableStateOf(false) }
     var breakText by rememberSaveable { mutableStateOf("") }
+
+    var openDeleteDialog by rememberSaveable { mutableStateOf(false) }
 
     val weight = 1.5f
 
@@ -67,7 +72,7 @@ fun ShiftEditScreen(
                     .height(40.dp)
             ) {
                 Text(
-                    text = "Shift Start:",
+                    text = stringResource(R.string.shift_start),
                     fontSize = 15.sp,
                     modifier = Modifier.weight(1f)
                 )
@@ -85,7 +90,8 @@ fun ShiftEditScreen(
                 ) {
                     Text(
                         text = uiState.startDate,
-                        fontSize = 15.sp
+                        fontSize = 15.sp,
+                        modifier = Modifier.testTag("startDate")
                     )
                 }
                 TextButton(
@@ -106,13 +112,15 @@ fun ShiftEditScreen(
                         Text(
                             text = uiState.startTime,
                             fontSize = 15.sp,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("startTime"),
                             textAlign = TextAlign.Center
 
                         )
                         Icon(
                             imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Select start time"
+                            contentDescription = stringResource(R.string.select_start_time)
                         )
                     }
                 }
@@ -124,7 +132,7 @@ fun ShiftEditScreen(
                     .height(40.dp)
             ) {
                 Text(
-                    text = "Shift End:",
+                    text = stringResource(R.string.shift_end),
                     fontSize = 15.sp,
                     modifier = Modifier.weight(1f)
                 )
@@ -141,7 +149,8 @@ fun ShiftEditScreen(
                 ) {
                     Text(
                         text = uiState.endDate,
-                        fontSize = 15.sp
+                        fontSize = 15.sp,
+                        modifier = Modifier.testTag("endDate")
                     )
                 }
                 TextButton(
@@ -162,12 +171,14 @@ fun ShiftEditScreen(
                         Text(
                             text = uiState.endTime,
                             fontSize = 15.sp,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("endTime"),
                             textAlign = TextAlign.Center
                         )
                         Icon(
                             imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Select end time"
+                            contentDescription = stringResource(R.string.select_end_time)
                         )
                     }
                 }
@@ -179,7 +190,7 @@ fun ShiftEditScreen(
                     .height(40.dp)
             ) {
                 Text(
-                    text = "Break:",
+                    text = stringResource(R.string.break_item),
                     modifier = Modifier.weight(1f)
                 )
                 Text(
@@ -189,7 +200,7 @@ fun ShiftEditScreen(
                 )
                 TextButton(
                     onClick = {
-                        openDialog = true
+                        openBreakDialog = true
                         breakText = ""
                     },
                     modifier = Modifier.weight(weight)
@@ -205,7 +216,7 @@ fun ShiftEditScreen(
                         )
                         Icon(
                             imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Select break time"
+                            contentDescription = stringResource(R.string.select_break_time)
                         )
                     }
                 }
@@ -217,7 +228,7 @@ fun ShiftEditScreen(
                     .height(40.dp)
             ) {
                 Text(
-                    text = "Total:",
+                    text = stringResource(R.string.total_item),
                     modifier = Modifier.weight(1f)
                 )
                 Text(
@@ -239,31 +250,26 @@ fun ShiftEditScreen(
                 modifier = Modifier.width(100.dp)
             ) {
                 Text(
-                    text = "Save",
+                    text = stringResource(R.string.save_button),
                     fontSize = 15.sp
                 )
             }
             Spacer(modifier = Modifier.padding(vertical = 10.dp))
             Button(
-                onClick = {
-                    scope.launch {
-                        viewModel.deleteShift()
-                        navigateBack()
-                    }
-                },
+                onClick = { openDeleteDialog = true },
                 modifier = Modifier.width(100.dp)
             ) {
                 Text(
-                    text = "Delete",
+                    text = stringResource(R.string.delete_button),
                     fontSize = 15.sp
                 )
             }
 
-            if (openDialog) {
+            if (openBreakDialog) {
                 AlertDialog(
-                    onDismissRequest = { openDialog = false },
+                    onDismissRequest = { openBreakDialog = false },
                     title = {
-                        Text(text = "Break (In Minutes)")
+                        Text(text = stringResource(R.string.break_in_minutes))
                     },
                     text = {
                         TextField(
@@ -271,23 +277,51 @@ fun ShiftEditScreen(
                             onValueChange = { newText ->
                                 breakText = newText.filter { it.isDigit() }
                             },
+                            placeholder = { Text(stringResource(R.string.set_break_time)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                     },
                     confirmButton = {
                         TextButton(
                             onClick = {
-                                openDialog = false
+                                openBreakDialog = false
                                 viewModel.updateBreakTotal(breakText)
                                 viewModel.updateTotal()
                             }
                         ) {
-                            Text("Confirm")
+                            Text(stringResource(R.string.confirm))
                         }
                     },
                     dismissButton = {
-                        TextButton(onClick = { openDialog = false }) {
-                            Text("Cancel")
+                        TextButton(onClick = { openBreakDialog = false }) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                    }
+                )
+            }
+
+            if(openDeleteDialog) {
+                AlertDialog(
+                    onDismissRequest = { openDeleteDialog = false },
+                    title = {
+                        Text(text = stringResource(R.string.delete_shift_dialog))
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                openDeleteDialog = false
+                                scope.launch {
+                                    viewModel.deleteShift()
+                                    navigateBack()
+                                }
+                            }
+                        ) {
+                            Text(stringResource(R.string.confirm))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { openDeleteDialog = false }) {
+                            Text(stringResource(R.string.cancel))
                         }
                     }
                 )
